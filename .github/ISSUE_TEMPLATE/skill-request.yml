@@ -1,5 +1,5 @@
 name: Skill request
-about: Request creation of a new skill using the generator inputs from copier.yml
+description: Request creation of a new skill using the generator inputs from copier.yml
 title: "skill: <domain>-<action>"
 labels:
   - skill-request
@@ -77,10 +77,10 @@ body:
         - problems
         - vscodeAPI
       default:
-        - codebase
-        - search
-        - editFiles
-        - runCommands
+        - 0
+        - 1
+        - 4
+        - 9
     validations:
       required: true
 
