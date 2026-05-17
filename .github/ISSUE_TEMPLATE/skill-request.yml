@@ -1,0 +1,101 @@
+name: Skill request
+about: Request creation of a new skill using the generator inputs from copier.yml
+title: "skill: <domain>-<action>"
+labels:
+  - skill-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill out the fields below. These match the generator inputs defined in copier.yml.
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      description: Domain or category of the skill
+      options:
+        - generate
+        - analyze
+        - create
+        - validate
+        - review
+    validations:
+      required: true
+
+  - type: input
+    id: action
+    attributes:
+      label: Action
+      description: Action performed by the skill (for example sample-docs, java-code, unit-tests, input-data, pull-request)
+      placeholder: sample-docs
+    validations:
+      required: true
+
+  - type: input
+    id: skill_name
+    attributes:
+      label: Skill name
+      description: Kebab-case in the format domain-action. If left blank, generator default applies.
+      placeholder: generate-sample-docs
+    validations:
+      required: false
+
+  - type: textarea
+    id: skill_description
+    attributes:
+      label: Skill description
+      description: One-line description of what this skill does
+      placeholder: Generates sample documentation from project inputs.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: skill_tools
+    attributes:
+      label: Skill tools
+      description: Tools the skill may use (select all that apply)
+      multiple: true
+      options:
+        - codebase
+        - search
+        - searchResults
+        - usages
+        - editFiles
+        - new
+        - fetch
+        - githubRepo
+        - openSimpleBrowser
+        - runCommands
+        - terminalLastCommand
+        - terminalSelection
+        - runTasks
+        - runTests
+        - testFailure
+        - findTestFiles
+        - runNotebooks
+        - problems
+        - vscodeAPI
+      default:
+        - codebase
+        - search
+        - editFiles
+        - runCommands
+    validations:
+      required: true
+
+  - type: input
+    id: skill_authors
+    attributes:
+      label: Skill authors
+      description: Comma-separated author names
+      placeholder: Ada, Grace, Linus
+    validations:
+      required: true
+
+  - type: input
+    id: target_organization
+    attributes:
+      label: Target Github organization
+      description: (Optional) If left blank, the default is CortexAIDevKit organization
+      placeholder: CortexAIDevKit
