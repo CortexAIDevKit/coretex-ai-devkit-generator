@@ -1,0 +1,1 @@
+# coretex-ai-devkit-generator
