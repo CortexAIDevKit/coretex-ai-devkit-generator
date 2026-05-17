@@ -76,11 +76,6 @@ body:
         - runNotebooks
         - problems
         - vscodeAPI
-      default:
-        - 0
-        - 1
-        - 4
-        - 9
     validations:
       required: true
 
