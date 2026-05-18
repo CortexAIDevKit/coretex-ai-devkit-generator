@@ -15,10 +15,6 @@ jobs:
     if: contains(github.event.issue.labels.*.name, 'skill-request')
     runs-on: ubuntu-latest
 
-    permissions:
-      issues: write
-      contents: read
-
     env:
       APP_ID: 3744672
       APP_SLUG: cortex-ai-devkit-bot
@@ -81,38 +77,38 @@ jobs:
             echo "project_name=${DOMAIN_TRIM}-${ACTION_TRIM}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Preflight 1 - Verify GitHub App installation
-        id: app-installed
-        uses: actions/github-script@v8
-        env:
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          APP_ID: ${{ env.APP_ID }}
-          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
-        with:
-          script: |
-            const script = require('./.github/workflows/scripts/verify-app-installation.js');
-            await script({ core });
-
-      - name: Comment if app missing
-        if: failure() && steps.app-installed.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
-          APP_SLUG: ${{ env.APP_SLUG }}
-          APP_ID: ${{ env.APP_ID }}
-        run: |
-          gh issue comment "$ISSUE_NUMBER" \
-            --repo "$GH_REPO" \
-            --body \
-            "❌ Preflight failed.
-
-            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
-
-            Please install the app on the organization and retry."
-
-          exit 1
+#      - name: Preflight 1 - Verify GitHub App installation
+#        id: app-installed
+#        uses: actions/github-script@v8
+#        env:
+#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+#          APP_ID: ${{ env.APP_ID }}
+#          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
+#        with:
+#          script: |
+#            const script = require('./.github/workflows/scripts/verify-app-installation.js');
+#            await script({ core });
+#
+#      - name: Comment if app missing
+#        if: failure() && steps.app-installed.outcome == 'failure'
+#        env:
+#          GH_TOKEN: ${{ github.token }}
+#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+#          ISSUE_NUMBER: ${{ github.event.issue.number }}
+#          GH_REPO: ${{ github.repository }}
+#          APP_SLUG: ${{ env.APP_SLUG }}
+#          APP_ID: ${{ env.APP_ID }}
+#        run: |
+#          gh issue comment "$ISSUE_NUMBER" \
+#            --repo "$GH_REPO" \
+#            --body \
+#            "❌ Preflight failed.
+#
+#            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
+#
+#            Please install the app on the organization and retry."
+#
+#          exit 1
 
       - name: Generate app token
         id: app-token
