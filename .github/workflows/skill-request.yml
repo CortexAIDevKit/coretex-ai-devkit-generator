@@ -79,38 +79,38 @@ jobs:
             echo "project_name=${DOMAIN_TRIM}-${ACTION_TRIM}"
           } >> "$GITHUB_OUTPUT"
 
-      #      - name: Preflight 1 - Verify GitHub App installation
-      #        id: app-installed
-      #        uses: actions/github-script@v8
-      #        env:
-      #          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-      #          APP_ID: ${{ env.APP_ID }}
-      #          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
-      #        with:
-      #          script: |
-      #            const script = require('./.github/workflows/scripts/verify-app-installation.js');
-      #            await script({ core });
-      #
-      #      - name: Comment if app missing
-      #        if: failure() && steps.app-installed.outcome == 'failure'
-      #        env:
-      #          GH_TOKEN: ${{ github.token }}
-      #          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-      #          ISSUE_NUMBER: ${{ github.event.issue.number }}
-      #          GH_REPO: ${{ github.repository }}
-      #          APP_SLUG: ${{ env.APP_SLUG }}
-      #          APP_ID: ${{ env.APP_ID }}
-      #        run: |
-      #          gh issue comment "$ISSUE_NUMBER" \
-      #            --repo "$GH_REPO" \
-      #            --body \
-      #            "❌ Preflight failed.
-      #
-      #            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
-      #
-      #            Please install the app on the organization and retry."
-      #
-      #          exit 1
+      - name: Preflight 1 - Verify GitHub App installation
+        id: app-installed
+        uses: actions/github-script@v8
+        env:
+          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+          APP_ID: ${{ env.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
+        with:
+          script: |
+            const script = require('./.github/workflows/scripts/verify-app-installation.js');
+            await script({ core });
+
+      - name: Comment if app missing
+        if: failure() && steps.app-installed.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+          APP_SLUG: ${{ env.APP_SLUG }}
+          APP_ID: ${{ env.APP_ID }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GH_REPO" \
+            --body \
+            "❌ Preflight failed.
+
+            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
+
+            Please install the app on the organization and retry."
+
+          exit 1
 
       - name: Generate app token
         id: app-token
@@ -120,14 +120,14 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.inputs.outputs.target_organization }}
 
-#      - name: Preflight 2 - Target repository must not already exist
-#        env:
-#          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-#          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
-#          ISSUE_NUMBER: ${{ github.event.issue.number }}
-#          GH_REPO: ${{ github.repository }}
-#        run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
+      - name: Preflight 2 - Target repository must not already exist
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+        run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -136,7 +136,7 @@ jobs:
 
       - name: Install copier
         run: |
-          pip install copier          
+          pip install copier
 
       - name: Generate project with copier
         env:
@@ -149,10 +149,14 @@ jobs:
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
         run: |
           set -euo pipefail
-          mkdir -p generated
-          cd generated
-          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-          copier copy --defaults --trust \
+
+          git config --global \
+            url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+
+          copier copy \
+            --defaults \
+            --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
             -d "skill_name=${SKILL_NAME}" \
@@ -162,37 +166,55 @@ jobs:
             gh:CortexAIDevKit/template-github-copilot-skills \
             "."
 
-      # - name: Create repository, commit and push
-      #   env:
-      #     GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      #     TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-      #     PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
-      #     SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
-      #     ISSUE_NUMBER: ${{ github.event.issue.number }}
-      #     SOURCE_REPO: ${{ github.repository }}
-      #   run: |
-      #     set -euo pipefail
-      #     REPO_FULL="${TARGET_ORG}/${PROJECT_DIR}"
-
-      #     gh repo create "$REPO_FULL" --private --description "$SKILL_DESCRIPTION" || true
-
-      #     cd "$PROJECT_DIR"
-      #     git init -b main
-      #     git config user.name  "cortex-ai-devkit-bot[bot]"
-      #     git config user.email "cortex-ai-devkit-bot[bot]@users.noreply.github.com"
-      #     git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git"
-      #     git add .
-      #     git commit -m "chore: scaffold ${PROJECT_DIR} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
-      #     git push -u origin main
-
-      # - name: Comment on issue
-      #   if: success()
-      #   env:
-      #     GH_TOKEN: ${{ github.token }}
-      #     ISSUE_NUMBER: ${{ github.event.issue.number }}
-      #     GH_REPO: ${{ github.repository }}
-      #     TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-      #     PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
-      #   run: |
-      #     gh issue comment "$ISSUE_NUMBER" --repo "$GH_REPO" --body \
-      #       "Skill scaffolded at https://github.com/${TARGET_ORG}/${PROJECT_DIR}"
+#      - name: Create repository, commit and push
+#        env:
+#          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+#          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+#          SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
+#          ISSUE_NUMBER: ${{ github.event.issue.number }}
+#          SOURCE_REPO: ${{ github.repository }}
+#        run: |
+#          set -euo pipefail
+#
+#          REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
+#
+#          gh repo create "$REPO_FULL" \
+#            --private \
+#            --description "$SKILL_DESCRIPTION"
+#
+#          cd "$PROJECT_NAME"
+#
+#          git init -b main
+#
+#          git config user.name \
+#            "cortex-ai-devkit-bot[bot]"
+#
+#          git config user.email \
+#            "cortex-ai-devkit-bot[bot]@users.noreply.github.com"
+#
+#          git remote add origin \
+#            "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git"
+#
+#          git add .
+#
+#          git commit -m \
+#            "chore: scaffold ${PROJECT_NAME} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
+#
+#          git push -u origin main
+#
+#      - name: Comment on issue
+#        if: success()
+#        env:
+#          GH_TOKEN: ${{ github.token }}
+#          ISSUE_NUMBER: ${{ github.event.issue.number }}
+#          GH_REPO: ${{ github.repository }}
+#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+#          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+#        run: |
+#          gh issue comment "$ISSUE_NUMBER" \
+#            --repo "$GH_REPO" \
+#            --body \
+#            "✅ Skill scaffolded successfully:
+#
+#            https://github.com/${TARGET_ORG}/${PROJECT_NAME}"
