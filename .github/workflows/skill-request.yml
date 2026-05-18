@@ -73,6 +73,7 @@ jobs:
 
       - name: Generate project with copier
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DOMAIN: ${{ steps.inputs.outputs.domain }}
           ACTION: ${{ steps.inputs.outputs.action }}
           SKILL_NAME: ${{ steps.inputs.outputs.skill_name }}
@@ -82,6 +83,7 @@ jobs:
           PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
         run: |
           set -euo pipefail
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           copier copy --defaults --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
