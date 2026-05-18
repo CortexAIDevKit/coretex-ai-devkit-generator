@@ -33,17 +33,11 @@ jobs:
         with:
           template-path: .github/ISSUE_TEMPLATE/skill-request.yml
 
-      - name: Debug parsed outputs
-        env:
-          PARSED: ${{ toJSON(steps.parse.outputs) }}
-        run: echo "$PARSED"
-
       - name: Resolve inputs
         id: inputs
         env:
           DOMAIN: ${{ steps.parse.outputs.issueparser_domain }}
           ACTION: ${{ steps.parse.outputs.issueparser_action }}
-          SKILL_NAME: ${{ steps.parse.outputs.issueparser_skill_name }}
           SKILL_DESCRIPTION: ${{ steps.parse.outputs.issueparser_skill_description }}
           SKILL_TOOLS: ${{ steps.parse.outputs.issueparser_skill_tools }}
           SKILL_AUTHORS: ${{ steps.parse.outputs.issueparser_skill_authors }}
@@ -53,10 +47,6 @@ jobs:
 
           DOMAIN_TRIM="$(echo "$DOMAIN" | xargs)"
           ACTION_TRIM="$(echo "$ACTION" | xargs)"
-
-          SKILL_NAME_TRIM="$(echo "${SKILL_NAME:-}" | xargs)"
-          [ -z "$SKILL_NAME_TRIM" ] && \
-            SKILL_NAME_TRIM="${DOMAIN_TRIM}-${ACTION_TRIM}"
 
           TARGET_ORG_TRIM="$(echo "${TARGET_ORG:-}" | xargs)"
           [ -z "$TARGET_ORG_TRIM" ] && \
@@ -84,12 +74,11 @@ jobs:
           {
             echo "domain=$DOMAIN_TRIM"
             echo "action=$ACTION_TRIM"
-            echo "skill_name=$SKILL_NAME_TRIM"
             echo "skill_description=$(echo "$SKILL_DESCRIPTION" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//')"
             echo "skill_tools=$TOOLS_JSON"
             echo "skill_authors=$AUTHORS_JSON"
             echo "target_organization=$TARGET_ORG_TRIM"
-            echo "project_dir=${DOMAIN_TRIM}-${ACTION_TRIM}"
+            echo "project_name=${DOMAIN_TRIM}-${ACTION_TRIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Preflight 1 - Verify GitHub App installation
@@ -137,10 +126,10 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_REPO: ${{ github.repository }}
-        run: .github/workflows/scripts/check-repo-available.sh \"${TARGET_ORG}\" \"${PROJECT_DIR}\"
+        run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -160,7 +149,7 @@ jobs:
           SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
           SKILL_TOOLS: ${{ steps.inputs.outputs.skill_tools }}
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
         run: |
           set -euo pipefail
 
@@ -173,7 +162,7 @@ jobs:
             --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
-            -d "skill_name=${SKILL_NAME}" \
+            -d "skill_name=${PROJECT_NAME}" \
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
@@ -184,20 +173,20 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
           SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           SOURCE_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          REPO_FULL="${TARGET_ORG}/${PROJECT_DIR}"
+          REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
 
           gh repo create "$REPO_FULL" \
             --private \
             --description "$SKILL_DESCRIPTION"
 
-          cd "$PROJECT_DIR"
+          cd "$PROJECT_NAME"
 
           git init -b main
 
@@ -213,7 +202,7 @@ jobs:
           git add .
 
           git commit -m \
-            "chore: scaffold ${PROJECT_DIR} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
+            "chore: scaffold ${PROJECT_NAME} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
 
           git push -u origin main
 
@@ -224,11 +213,11 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_REPO: ${{ github.repository }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
         run: |
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$GH_REPO" \
             --body \
             "✅ Skill scaffolded successfully:
 
-            https://github.com/${TARGET_ORG}/${PROJECT_DIR}"
+            https://github.com/${TARGET_ORG}/${PROJECT_NAME}"
