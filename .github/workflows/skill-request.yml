@@ -24,11 +24,19 @@ jobs:
       APP_SLUG: cortex-ai-devkit-bot
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Parse issue body
         id: parse
         uses: stefanbuck/github-issue-parser@v3
         with:
           template-path: .github/ISSUE_TEMPLATE/skill-request.yml
+
+      - name: Debug parsed outputs
+        env:
+          PARSED: ${{ toJSON(steps.parse.outputs) }}
+        run: echo "$PARSED"
 
       - name: Resolve inputs
         id: inputs
