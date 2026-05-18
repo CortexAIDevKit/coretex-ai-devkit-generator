@@ -20,8 +20,8 @@ jobs:
       APP_SLUG: cortex-ai-devkit-bot
 
     steps:
-      #      - name: Checkout repository
-      #        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Parse issue body
         id: parse
