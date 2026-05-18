@@ -149,7 +149,8 @@ jobs:
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
         run: |
           set -euo pipefail
-
+          mkdir -p generated
+          cd generated
           git config --global \
             url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf \
             "https://github.com/"
