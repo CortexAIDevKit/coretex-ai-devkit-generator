@@ -91,7 +91,7 @@ jobs:
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
-            gh:CortexAIDevKit/copilot-skill-template \
+            gh:CortexAIDevKit/template-github-copilot-skills \
             "${PROJECT_DIR}"
 
       - name: Create repository, commit and push
