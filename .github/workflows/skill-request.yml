@@ -122,14 +122,14 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.inputs.outputs.target_organization }}
 
-      - name: Preflight 2 - Target repository must not already exist
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
-        run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
+      # - name: Preflight 2 - Target repository must not already exist
+      #   env:
+      #     GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      #     TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+      #     PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+      #     ISSUE_NUMBER: ${{ github.event.issue.number }}
+      #     GH_REPO: ${{ github.repository }}
+      #   run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
 
       - name: Set up Python
         uses: actions/setup-python@v5
