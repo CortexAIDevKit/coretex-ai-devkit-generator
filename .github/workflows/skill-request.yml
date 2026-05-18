@@ -167,55 +167,57 @@ jobs:
             gh:CortexAIDevKit/template-github-copilot-skills \
             "."
 
-#      - name: Create repository, commit and push
-#        env:
-#          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-#          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
-#          SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
-#          ISSUE_NUMBER: ${{ github.event.issue.number }}
-#          SOURCE_REPO: ${{ github.repository }}
-#        run: |
-#          set -euo pipefail
-#
-#          REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
-#
-#          gh repo create "$REPO_FULL" \
-#            --private \
-#            --description "$SKILL_DESCRIPTION"
-#
-#          cd "$PROJECT_NAME"
-#
-#          git init -b main
-#
-#          git config user.name \
-#            "cortex-ai-devkit-bot[bot]"
-#
-#          git config user.email \
-#            "cortex-ai-devkit-bot[bot]@users.noreply.github.com"
-#
-#          git remote add origin \
-#            "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git"
-#
-#          git add .
-#
-#          git commit -m \
-#            "chore: scaffold ${PROJECT_NAME} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
-#
-#          git push -u origin main
-#
-#      - name: Comment on issue
-#        if: success()
-#        env:
-#          GH_TOKEN: ${{ github.token }}
-#          ISSUE_NUMBER: ${{ github.event.issue.number }}
-#          GH_REPO: ${{ github.repository }}
-#          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-#          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
-#        run: |
-#          gh issue comment "$ISSUE_NUMBER" \
-#            --repo "$GH_REPO" \
-#            --body \
-#            "✅ Skill scaffolded successfully:
-#
-#            https://github.com/${TARGET_ORG}/${PROJECT_NAME}"
+      - name: Create repository, commit and push
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+          SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          
+          REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
+
+          gh repo create "$REPO_FULL" \
+            --description "$SKILL_DESCRIPTION" 
+  
+          gh repo edit "$REPO_FULL" \
+            --add-topic "copilot-skill"
+
+          cd generated
+
+          git init -b main
+
+          git config user.name \
+            "cortex-ai-devkit-bot[bot]"
+
+          git config user.email \
+            "cortex-ai-devkit-bot[bot]@users.noreply.github.com"
+
+          git remote add origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO_FULL}.git"
+
+          git add .
+
+          git commit -m \
+            "chore: scaffold ${PROJECT_NAME} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
+
+          git push -u origin main
+
+      - name: Comment on issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GH_REPO" \
+            --body \
+            "✅ Skill scaffolded successfully:
+
+            https://github.com/${TARGET_ORG}/${PROJECT_NAME}"
