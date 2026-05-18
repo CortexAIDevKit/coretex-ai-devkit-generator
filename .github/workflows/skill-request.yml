@@ -92,7 +92,7 @@ jobs:
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
             gh:CortexAIDevKit/template-github-copilot-skills \
-            "${PROJECT_DIR}"
+            "."
 
       - name: Create repository, commit and push
         env:
