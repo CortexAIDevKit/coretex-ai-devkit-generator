@@ -33,17 +33,11 @@ jobs:
         with:
           template-path: .github/ISSUE_TEMPLATE/skill-request.yml
 
-      - name: Debug parsed outputs
-        env:
-          PARSED: ${{ toJSON(steps.parse.outputs) }}
-        run: echo "$PARSED"
-
       - name: Resolve inputs
         id: inputs
         env:
           DOMAIN: ${{ steps.parse.outputs.issueparser_domain }}
           ACTION: ${{ steps.parse.outputs.issueparser_action }}
-          SKILL_NAME: ${{ steps.parse.outputs.issueparser_skill_name }}
           SKILL_DESCRIPTION: ${{ steps.parse.outputs.issueparser_skill_description }}
           SKILL_TOOLS: ${{ steps.parse.outputs.issueparser_skill_tools }}
           SKILL_AUTHORS: ${{ steps.parse.outputs.issueparser_skill_authors }}
@@ -53,10 +47,6 @@ jobs:
 
           DOMAIN_TRIM="$(echo "$DOMAIN" | xargs)"
           ACTION_TRIM="$(echo "$ACTION" | xargs)"
-
-          SKILL_NAME_TRIM="$(echo "${SKILL_NAME:-}" | xargs)"
-          [ -z "$SKILL_NAME_TRIM" ] && \
-            SKILL_NAME_TRIM="${DOMAIN_TRIM}-${ACTION_TRIM}"
 
           TARGET_ORG_TRIM="$(echo "${TARGET_ORG:-}" | xargs)"
           [ -z "$TARGET_ORG_TRIM" ] && \
@@ -84,12 +74,11 @@ jobs:
           {
             echo "domain=$DOMAIN_TRIM"
             echo "action=$ACTION_TRIM"
-            echo "skill_name=$SKILL_NAME_TRIM"
             echo "skill_description=$(echo "$SKILL_DESCRIPTION" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//')"
             echo "skill_tools=$TOOLS_JSON"
             echo "skill_authors=$AUTHORS_JSON"
             echo "target_organization=$TARGET_ORG_TRIM"
-            echo "project_dir=${DOMAIN_TRIM}-${ACTION_TRIM}"
+            echo "project_name=${DOMAIN_TRIM}-${ACTION_TRIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Preflight 1 - Verify GitHub App installation
@@ -101,101 +90,8 @@ jobs:
           PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
         with:
           script: |
-            const crypto = require("crypto");
-
-            function base64url(input) {
-              return Buffer.from(input)
-                .toString("base64")
-                .replace(/=/g, "")
-                .replace(/\+/g, "-")
-                .replace(/\//g, "_");
-            }
-
-            const header = {
-              alg: "RS256",
-              typ: "JWT"
-            };
-
-            const now =
-              Math.floor(Date.now() / 1000);
-
-            const payload = {
-              iat: now - 60,
-              exp: now + (10 * 60),
-              iss: process.env.APP_ID
-            };
-
-            const encodedHeader =
-              base64url(
-                JSON.stringify(header)
-              );
-
-            const encodedPayload =
-              base64url(
-                JSON.stringify(payload)
-              );
-
-            const data =
-              `${encodedHeader}.${encodedPayload}`;
-
-            const signer =
-              crypto.createSign(
-                "RSA-SHA256"
-              );
-
-            signer.update(data);
-
-            const signature =
-              signer.sign(
-                process.env.PRIVATE_KEY,
-                "base64"
-              )
-              .replace(/=/g, "")
-              .replace(/\+/g, "-")
-              .replace(/\//g, "_");
-
-            const jwt =
-              `${data}.${signature}`;
-
-            const org =
-              process.env.TARGET_ORG;
-
-            const response = await fetch(
-              `https://api.github.com/orgs/${encodeURIComponent(org)}/installation`,
-              {
-                method: "GET",
-                headers: {
-                  authorization: `Bearer ${jwt}`,
-                  accept: "application/vnd.github+json",
-                  "user-agent": `${process.env.APP_SLUG}-workflow`
-                }
-              }
-            );
-
-            if (response.status === 404) {
-              core.setFailed(
-                `GitHub App ${process.env.APP_SLUG} is not installed on ${org}`
-              );
-              return;
-            }
-
-            if (!response.ok) {
-              const body = await response.text();
-              throw new Error(
-                `Installation lookup failed: ${response.status} ${body}`
-              );
-            }
-
-            const installation = await response.json();
-
-            core.info(
-              `✅ ${process.env.APP_SLUG} installed on ${org}`
-            );
-
-            core.setOutput(
-              "installation_id",
-              String(installation.id)
-            );
+            const script = require('./.github/workflows/scripts/verify-app-installation.js');
+            await script({ core });
 
       - name: Comment if app missing
         if: failure() && steps.app-installed.outcome == 'failure'
@@ -226,42 +122,24 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.inputs.outputs.target_organization }}
 
+      - name: Debug token scopes
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          curl -sI -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/CortexAIDevKit/template-github-copilot-skills \
+            | grep -i -E 'status|x-accepted|x-oauth'
+          curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/installation/repositories | jq '.repositories[].full_name'
+
       - name: Preflight 2 - Target repository must not already exist
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-
-          STATUS=$(curl -s \
-            -o /dev/null \
-            -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${TARGET_ORG}/${PROJECT_DIR}")
-
-          if [ "$STATUS" = "200" ]; then
-            gh issue comment "$ISSUE_NUMBER" \
-              --repo "$GH_REPO" \
-              --body \
-              "❌ Preflight failed.
-
-              Repository \`${TARGET_ORG}/${PROJECT_DIR}\` already exists.
-
-              Choose a different domain/action/skill_name and retry."
-
-            exit 1
-          fi
-
-          if [ "$STATUS" != "404" ]; then
-            echo "Unexpected HTTP ${STATUS}"
-            exit 1
-          fi
-
-          echo "✅ Repository available"
+        run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -281,7 +159,7 @@ jobs:
           SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
           SKILL_TOOLS: ${{ steps.inputs.outputs.skill_tools }}
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
         run: |
           set -euo pipefail
 
@@ -294,7 +172,7 @@ jobs:
             --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
-            -d "skill_name=${SKILL_NAME}" \
+            -d "skill_name=${PROJECT_NAME}" \
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
@@ -305,20 +183,20 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
           SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           SOURCE_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          REPO_FULL="${TARGET_ORG}/${PROJECT_DIR}"
+          REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
 
           gh repo create "$REPO_FULL" \
             --private \
             --description "$SKILL_DESCRIPTION"
 
-          cd "$PROJECT_DIR"
+          cd "$PROJECT_NAME"
 
           git init -b main
 
@@ -334,7 +212,7 @@ jobs:
           git add .
 
           git commit -m \
-            "chore: scaffold ${PROJECT_DIR} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
+            "chore: scaffold ${PROJECT_NAME} from copilot-skill-template (closes ${SOURCE_REPO}#${ISSUE_NUMBER})"
 
           git push -u origin main
 
@@ -345,11 +223,11 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_REPO: ${{ github.repository }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
+          PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
         run: |
           gh issue comment "$ISSUE_NUMBER" \
             --repo "$GH_REPO" \
             --body \
             "✅ Skill scaffolded successfully:
 
-            https://github.com/${TARGET_ORG}/${PROJECT_DIR}"
+            https://github.com/${TARGET_ORG}/${PROJECT_NAME}"
