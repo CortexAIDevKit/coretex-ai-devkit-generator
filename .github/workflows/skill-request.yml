@@ -152,39 +152,42 @@ jobs:
             const org =
               process.env.TARGET_ORG;
 
-            try {
-              const response =
-                await github.request(
-                  "GET /orgs/{org}/installation",
-                  {
-                    org,
-                    headers: {
-                      authorization:
-                        `Bearer ${jwt}`,
-                      accept:
-                        "application/vnd.github+json"
-                    }
-                  }
-                );
-
-              core.info(
-                `✅ ${process.env.APP_SLUG} installed on ${org}`
-              );
-
-              core.setOutput(
-                "installation_id",
-                String(response.data.id)
-              );
-
-            } catch (error) {
-              if (error.status === 404) {
-                core.setFailed(
-                  `GitHub App ${process.env.APP_SLUG} is not installed on ${org}`
-                );
-              } else {
-                throw error;
+            const response = await fetch(
+              `https://api.github.com/orgs/${encodeURIComponent(org)}/installation`,
+              {
+                method: "GET",
+                headers: {
+                  authorization: `Bearer ${jwt}`,
+                  accept: "application/vnd.github+json",
+                  "user-agent": `${process.env.APP_SLUG}-workflow`
+                }
               }
+            );
+
+            if (response.status === 404) {
+              core.setFailed(
+                `GitHub App ${process.env.APP_SLUG} is not installed on ${org}`
+              );
+              return;
             }
+
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(
+                `Installation lookup failed: ${response.status} ${body}`
+              );
+            }
+
+            const installation = await response.json();
+
+            core.info(
+              `✅ ${process.env.APP_SLUG} installed on ${org}`
+            );
+
+            core.setOutput(
+              "installation_id",
+              String(installation.id)
+            );
 
       - name: Comment if app missing
         if: failure() && steps.app-installed.outcome == 'failure'
