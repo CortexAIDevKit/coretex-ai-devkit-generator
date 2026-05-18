@@ -63,26 +63,6 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.inputs.outputs.target_organization }}
 
-      - name: Preflight - verify GitHub App installation
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          STATUS=$(curl -s -o /tmp/installation.json -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/orgs/${TARGET_ORG}/installation" || true)
-          if [ "$STATUS" != "200" ]; then
-            gh issue comment "$ISSUE_NUMBER" --repo "$GH_REPO" --body \
-              "Preflight failed: GitHub App \`cortex-ai-devkit-bot\` (app id 3744672) is not installed on organization \`${TARGET_ORG}\`. Please install it and retry."
-            echo "App not installed on $TARGET_ORG (HTTP $STATUS)"
-            exit 1
-          fi
-          echo "App is installed on $TARGET_ORG"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
