@@ -2,7 +2,7 @@ name: Skill Request
 
 on:
   issues:
-    types: [opened, labeled, reopened]
+    types: [opened, reopened]
 
 permissions:
   issues: write
