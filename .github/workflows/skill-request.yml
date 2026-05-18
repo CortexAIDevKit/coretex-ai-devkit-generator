@@ -187,7 +187,7 @@ jobs:
           gh repo edit "$REPO_FULL" \
             --add-topic "copilot-skill"
 
-          cd generated
+          cd generated/${PROJECT_NAME}
 
           git init -b main
 
