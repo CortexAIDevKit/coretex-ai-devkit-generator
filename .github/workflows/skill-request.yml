@@ -163,10 +163,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          git config --global \
-            url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-
           copier copy \
             --defaults \
             --trust \
@@ -176,7 +172,7 @@ jobs:
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
-            gh:CortexAIDevKit/template-github-copilot-skills \
+            "https://x-access-token:${GH_TOKEN}@github.com/CortexAIDevKit/template-github-copilot-skills.git" \
             "."
 
       - name: Create repository, commit and push
