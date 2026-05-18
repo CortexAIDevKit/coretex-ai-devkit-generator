@@ -145,14 +145,8 @@ jobs:
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
         run: |
           set -euo pipefail
-
-          git config --global \
-            url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-
-          copier copy \
-            --defaults \
-            --trust \
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          copier copy --defaults --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
             -d "skill_name=${SKILL_NAME}" \
