@@ -92,5 +92,8 @@ body:
     id: target_organization
     attributes:
       label: Target Github organization
-      description: (Optional) If left blank, the default is CortexAIDevKit organization
+      description: The target Github organization where the skill repository will be created.
       placeholder: CortexAIDevKit
+      default: CortexAIDevKit
+    validations:
+      required: true
