@@ -134,19 +134,11 @@ jobs:
 
       - name: Install copier
         run: |
-          pip install copier
-
-      - name: Generate template token
-        id: template-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ env.APP_ID }}
-          private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
-          owner: ${{ steps.inputs.outputs.target_organization }}
+          pip install copier          
 
       - name: Generate project with copier
         env:
-          GH_TOKEN: ${{ steps.template-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           DOMAIN: ${{ steps.inputs.outputs.domain }}
           ACTION: ${{ steps.inputs.outputs.action }}
           SKILL_NAME: ${{ steps.inputs.outputs.project_name }}
@@ -155,6 +147,8 @@ jobs:
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
         run: |
           set -euo pipefail
+          mkdir -p generated
+          cd generated
           git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           copier copy --defaults --trust \
             -d "domain=${DOMAIN}" \
