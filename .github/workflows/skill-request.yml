@@ -204,7 +204,7 @@ jobs:
             --body \
             "❌ Preflight failed.
 
-            [Install GitHub App: \`${APP_SLUG}\`](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
+            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
 
             Please install the app on the organization and retry."
 
