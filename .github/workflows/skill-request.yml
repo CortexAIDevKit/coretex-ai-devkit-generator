@@ -140,35 +140,7 @@ jobs:
           PROJECT_DIR: ${{ steps.inputs.outputs.project_dir }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-
-          STATUS=$(curl -s \
-            -o /dev/null \
-            -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${TARGET_ORG}/${PROJECT_DIR}")
-
-          if [ "$STATUS" = "200" ]; then
-            gh issue comment "$ISSUE_NUMBER" \
-              --repo "$GH_REPO" \
-              --body \
-              "❌ Preflight failed.
-
-              Repository \`${TARGET_ORG}/${PROJECT_DIR}\` already exists.
-
-              Choose a different domain/action/skill_name and retry."
-
-            exit 1
-          fi
-
-          if [ "$STATUS" != "404" ]; then
-            echo "Unexpected HTTP ${STATUS}"
-            exit 1
-          fi
-
-          echo "✅ Repository available"
+        run: .github/workflows/scripts/check-repo-available.sh \"${TARGET_ORG}\" \"${PROJECT_DIR}\"
 
       - name: Set up Python
         uses: actions/setup-python@v5
