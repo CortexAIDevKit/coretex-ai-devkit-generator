@@ -155,7 +155,7 @@ jobs:
             --trust \
             -d "domain=${DOMAIN}" \
             -d "action=${ACTION}" \
-            -d "skill_name=${PROJECT_NAME}" \
+            -d "skill_name=${SKILL_NAME}" \
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \
