@@ -106,7 +106,7 @@ jobs:
           set -euo pipefail
           REPO_FULL="${TARGET_ORG}/${PROJECT_DIR}"
 
-          gh repo create "$REPO_FULL" --private --description "$SKILL_DESCRIPTION" || true
+          gh repo create "$REPO_FULL" --description "$SKILL_DESCRIPTION" || true
 
           cd "$PROJECT_DIR"
           git init -b main
