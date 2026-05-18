@@ -181,6 +181,7 @@ jobs:
           REPO_FULL="${TARGET_ORG}/${PROJECT_NAME}"
 
           gh repo create "$REPO_FULL" \
+            --public \
             --description "$SKILL_DESCRIPTION" 
   
           gh repo edit "$REPO_FULL" \
