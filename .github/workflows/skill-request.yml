@@ -39,8 +39,8 @@ jobs:
           TARGET_ORG_TRIM="$(echo "${TARGET_ORG:-}" | xargs)"
           [ -z "$TARGET_ORG_TRIM" ] && TARGET_ORG_TRIM="CortexAIDevKit"
 
-          # Convert tools markdown list ("- codebase\n- search") to JSON array string
-          TOOLS_JSON="$(echo "$SKILL_TOOLS" | sed 's/^[[:space:]]*-[[:space:]]*//' | grep -v '^$' | jq -R . | jq -s -c .)"
+          # Convert tools (comma-separated or "- item" list) to JSON array string
+          TOOLS_JSON="$(echo "$SKILL_TOOLS" | sed 's/^[[:space:]]*-[[:space:]]*//' | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | jq -R . | jq -s -c .)"
           # Convert authors "Ada, Grace" to JSON array
           AUTHORS_JSON="$(echo "$SKILL_AUTHORS" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | jq -R . | jq -s -c .)"
 
