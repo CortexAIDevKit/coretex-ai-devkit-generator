@@ -20,6 +20,11 @@ body:
         - create
         - validate
         - review
+        - build
+        - ci
+        - security
+        - docs
+        - infra
     validations:
       required: true
 
