@@ -3,6 +3,7 @@ description: Request creation of a new skill using the generator inputs from cop
 title: "skill: <context>-<action>-<target>-skill"
 labels:
   - skill-request
+type: task
 body:
   - type: markdown
     attributes:
