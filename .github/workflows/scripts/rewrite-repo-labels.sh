@@ -39,7 +39,7 @@ gh label list \
   --repo "$REPO_FULL" \
   --limit 1000 \
   --json name \
-  --jq '.[].name' \
+| jq -r '.[].name' \
 | while IFS= read -r existing_label; do
   [[ -z "$existing_label" ]] && continue
   gh label delete "$existing_label" --repo "$REPO_FULL" --yes
