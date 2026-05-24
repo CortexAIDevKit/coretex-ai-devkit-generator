@@ -190,6 +190,17 @@ jobs:
           gh repo edit "$REPO_FULL" \
             --add-topic "copilot-skill"
 
+          .github/workflows/scripts/apply-repo-settings.sh \
+            "$REPO_FULL"
+
+          .github/workflows/scripts/apply-repo-rulesets.sh \
+            "$REPO_FULL" \
+            ".github/workflows/misc/ruleset-all-branches.json"
+
+          .github/workflows/scripts/apply-repo-rulesets.sh \
+            "$REPO_FULL" \
+            ".github/workflows/misc/ruleset-main-branch.json"
+
           .github/workflows/scripts/rewrite-repo-labels.sh \
             "$REPO_FULL" \
             ".github/workflows/misc/labels.json"
