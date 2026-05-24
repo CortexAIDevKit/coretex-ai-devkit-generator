@@ -1,6 +1,6 @@
 name: Skill request
 description: Request creation of a new skill using the generator inputs from copier.yml
-title: "skill: <context>-<action>-<target>"
+title: "skill: <context>-<action>-<target>-skill"
 labels:
   - skill-request
 body:
