@@ -79,7 +79,7 @@ jobs:
             echo "skill_tools=$TOOLS_JSON"
             echo "skill_authors=$AUTHORS_JSON"
             echo "target_organization=$TARGET_ORG_TRIM"
-            echo "project_name=${CONTEXT_TRIM}-${ACTION_TRIM}-${TARGET_TRIM}"
+            echo "project_name=${CONTEXT_TRIM}-${ACTION_TRIM}-${TARGET_TRIM}-skill"
           } >> "$GITHUB_OUTPUT"
 
       - name: Preflight 1 - Verify GitHub App installation
