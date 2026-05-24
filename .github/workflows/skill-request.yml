@@ -34,8 +34,9 @@ jobs:
       - name: Resolve inputs
         id: inputs
         env:
-          DOMAIN: ${{ steps.parse.outputs.issueparser_domain }}
+          CONTEXT: ${{ steps.parse.outputs.issueparser_context }}
           ACTION: ${{ steps.parse.outputs.issueparser_action }}
+          TARGET: ${{ steps.parse.outputs.issueparser_target }}
           SKILL_DESCRIPTION: ${{ steps.parse.outputs.issueparser_skill_description }}
           SKILL_TOOLS: ${{ steps.parse.outputs.issueparser_skill_tools }}
           SKILL_AUTHORS: ${{ steps.parse.outputs.issueparser_skill_authors }}
@@ -43,8 +44,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          DOMAIN_TRIM="$(echo "$DOMAIN" | xargs)"
-          ACTION_TRIM="$(echo "$ACTION" | xargs)"
+          CONTEXT_TRIM="$(echo "$CONTEXT" | xargs | tr '[:upper:]' '[:lower:]')"
+          ACTION_TRIM="$(echo "$ACTION" | xargs | tr '[:upper:]' '[:lower:]')"
+          TARGET_TRIM="$(echo "$TARGET" | xargs | tr '[:upper:]' '[:lower:]')"
 
           TARGET_ORG_TRIM="$(echo "${TARGET_ORG:-}" | xargs)"
           [ -z "$TARGET_ORG_TRIM" ] && \
@@ -70,13 +72,14 @@ jobs:
           )"
 
           {
-            echo "domain=$DOMAIN_TRIM"
+            echo "context=$CONTEXT_TRIM"
             echo "action=$ACTION_TRIM"
+            echo "target=$TARGET_TRIM"
             echo "skill_description=$(echo "$SKILL_DESCRIPTION" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//')"
             echo "skill_tools=$TOOLS_JSON"
             echo "skill_authors=$AUTHORS_JSON"
             echo "target_organization=$TARGET_ORG_TRIM"
-            echo "project_name=${DOMAIN_TRIM}-${ACTION_TRIM}"
+            echo "project_name=${CONTEXT_TRIM}-${ACTION_TRIM}-${TARGET_TRIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Preflight 1 - Verify GitHub App installation
@@ -141,9 +144,9 @@ jobs:
       - name: Generate project with copier
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          DOMAIN: ${{ steps.inputs.outputs.domain }}
+          CONTEXT: ${{ steps.inputs.outputs.context }}
           ACTION: ${{ steps.inputs.outputs.action }}
-          SKILL_NAME: ${{ steps.inputs.outputs.project_name }}
+          TARGET: ${{ steps.inputs.outputs.target }}
           SKILL_DESCRIPTION: ${{ steps.inputs.outputs.skill_description }}
           SKILL_TOOLS: ${{ steps.inputs.outputs.skill_tools }}
           SKILL_AUTHORS: ${{ steps.inputs.outputs.skill_authors }}
@@ -158,9 +161,9 @@ jobs:
           copier copy \
             --defaults \
             --trust \
-            -d "domain=${DOMAIN}" \
+            -d "context=${CONTEXT}" \
             -d "action=${ACTION}" \
-            -d "skill_name=${SKILL_NAME}" \
+            -d "target=${TARGET}" \
             -d "skill_description=${SKILL_DESCRIPTION}" \
             -d "skill_tools=${SKILL_TOOLS}" \
             -d "skill_authors=${SKILL_AUTHORS}" \

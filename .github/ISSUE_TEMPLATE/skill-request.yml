@@ -1,6 +1,6 @@
 name: Skill request
 description: Request creation of a new skill using the generator inputs from copier.yml
-title: "skill: <domain>-<action>"
+title: "skill: <context>-<action>-<target>"
 labels:
   - skill-request
 body:
@@ -9,22 +9,12 @@ body:
       value: |
         Fill out the fields below. These match the generator inputs defined in copier.yml.
 
-  - type: dropdown
-    id: domain
+  - type: input
+    id: context
     attributes:
-      label: Domain
-      description: Domain or category of the skill
-      options:
-        - generate
-        - analyze
-        - create
-        - validate
-        - review
-        - build
-        - ci
-        - security
-        - docs
-        - infra
+      label: Context
+      description: Area, tech, or stage the skill applies to (e.g. maven, ci, repo, git, docs, test, security, api, angular)
+      placeholder: ci
     validations:
       required: true
 
@@ -32,8 +22,17 @@ body:
     id: action
     attributes:
       label: Action
-      description: Action performed by the skill (for example sample-docs, java-code, unit-tests, input-data, pull-request)
-      placeholder: sample-docs
+      description: Imperative verb describing what the skill does (e.g. fix, generate, upgrade, debug, validate, create, scaffold)
+      placeholder: generate
+    validations:
+      required: true
+
+  - type: input
+    id: target
+    attributes:
+      label: Target
+      description: Concrete artifact or problem acted on (e.g. readme, workflow, dependencies, release-branch, unit-tests)
+      placeholder: workflow
     validations:
       required: true
 
