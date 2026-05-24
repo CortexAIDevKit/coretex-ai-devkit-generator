@@ -190,6 +190,10 @@ jobs:
           gh repo edit "$REPO_FULL" \
             --add-topic "copilot-skill"
 
+          .github/workflows/scripts/rewrite-repo-labels.sh \
+            "$REPO_FULL" \
+            ".github/workflows/misc/labels.json"
+
           cd generated/${PROJECT_NAME}
 
           git init -b main

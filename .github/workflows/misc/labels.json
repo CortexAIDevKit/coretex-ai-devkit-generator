@@ -1,0 +1,11 @@
+[
+  { "name": "bug", "description": "Something isn't working", "color": "d73a4a" },
+  { "name": "enhancement", "description": "New feature or improvement", "color": "a2eeef" },
+  { "name": "question", "description": "Further information requested", "color": "d876e3" },
+  { "name": "triage", "description": "Needs initial review", "color": "fbca04" },
+  { "name": "in-progress", "description": "Actively being worked", "color": "0e8a16" },
+  { "name": "awaiting-reproduction", "description": "Waiting on reporter to supply a reliable way to reproduce", "color": "f9d0c4" },
+  { "name": "wontfix", "description": "Won't be addressed", "color": "ffffff" },
+  { "name": "duplicate", "description": "Already tracked elsewhere", "color": "cfd3d7" },
+  { "name": "invalid", "description": "Not actionable", "color": "e4e669" }
+]
