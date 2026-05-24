@@ -1,0 +1,139 @@
+name: Prompt request
+description: Request creation of a new prompt using the generator inputs from copier.yml
+title: "prompt: <context>-<action>-<target>-prompt"
+labels:
+  - prompt-request
+type: task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Fill out the fields below. These match the generator inputs defined in copier.yml.
+
+  - type: input
+    id: context
+    attributes:
+      label: Context
+      description: Area, tech, or stage the prompt applies to (e.g. maven, ci, repo, git, docs, test, security, api, angular)
+      placeholder: ci
+    validations:
+      required: true
+
+  - type: input
+    id: action
+    attributes:
+      label: Action
+      description: Imperative verb describing what the prompt does (e.g. fix, generate, upgrade, debug, validate, create, scaffold)
+      placeholder: generate
+    validations:
+      required: true
+
+  - type: input
+    id: target
+    attributes:
+      label: Target
+      description: Concrete artifact or problem acted on (e.g. readme, workflow, dependencies, release-branch, unit-tests)
+      placeholder: workflow
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prompt_mode
+    attributes:
+      label: Prompt mode
+      description: Mode of the prompt agent
+      default: 2
+      options:
+        - ask
+        - agent
+        - plan
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prompt_model
+    attributes:
+      label: Prompt model
+      description: Language model to use for this prompt
+      default: 1
+      options:
+        - gpt-4.1
+        - gpt-5-mini
+        - gpt-5.2
+        - gpt-5.2-codex
+        - gpt-5.3-codex
+        - gpt-5.4
+        - gpt-5.4-mini
+        - gpt-5.4-nano
+        - gpt-5.5
+        - claude-haiku-4.5
+        - claude-opus-4.5
+        - claude-opus-4.6
+        - claude-opus-4.6-fast
+        - claude-opus-4.7
+        - claude-sonnet-4.5
+        - claude-sonnet-4.6
+        - gemini-2.5-pro
+        - gemini-3-flash
+        - gemini-3.1-pro
+        - gemini-3.5-flash
+        - raptor-mini
+        - goldeneye
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt_description
+    attributes:
+      label: Prompt description
+      description: One-line description of what this prompt does
+      placeholder: Generates sample documentation from project inputs.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prompt_tools
+    attributes:
+      label: Prompt tools
+      description: Tools the prompt may use (select all that apply)
+      multiple: true
+      options:
+        - codebase
+        - search
+        - searchResults
+        - usages
+        - editFiles
+        - new
+        - fetch
+        - githubRepo
+        - openSimpleBrowser
+        - runCommands
+        - terminalLastCommand
+        - terminalSelection
+        - runTasks
+        - runTests
+        - testFailure
+        - findTestFiles
+        - runNotebooks
+        - problems
+        - vscodeAPI
+    validations:
+      required: true
+
+  - type: input
+    id: prompt_authors
+    attributes:
+      label: Prompt authors
+      description: Comma-separated author names
+      placeholder: Ada, Grace, Linus
+    validations:
+      required: true
+
+  - type: input
+    id: target_organization
+    attributes:
+      label: Target Github organization
+      description: The target Github organization where the prompt repository will be created.
+      placeholder: CortexAIDevKit
+    validations:
+      required: true
