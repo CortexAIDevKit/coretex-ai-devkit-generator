@@ -4,6 +4,8 @@ title: "prompt: <context>-<action>-<target>-prompt"
 labels:
   - prompt-request
 type: task
+projects:
+  - CortexAIDevKit/2
 body:
   - type: markdown
     attributes:
