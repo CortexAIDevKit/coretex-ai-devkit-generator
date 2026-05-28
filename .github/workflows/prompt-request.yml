@@ -1,10 +1,20 @@
 name: Prompt Request
 
 on:
-  issues:
-    types:
-      - opened
-      - reopened
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: number
+      issue_body:
+        required: true
+        type: string
+      source_repo:
+        required: true
+        type: string
+      target_organization:
+        required: true
+        type: string
 
 permissions:
   issues: write
@@ -12,12 +22,10 @@ permissions:
 
 jobs:
   generate-prompt:
-    if: contains(github.event.issue.labels.*.name, 'prompt-request')
     runs-on: ubuntu-latest
 
     env:
       APP_ID: 3744672
-      APP_SLUG: cortex-ai-devkit-bot
 
     steps:
       - name: Checkout repository
@@ -30,6 +38,7 @@ jobs:
         uses: stefanbuck/github-issue-parser@v3
         with:
           template-path: .github/ISSUE_TEMPLATE/prompt-request.yml
+          issue-body: ${{ inputs.issue_body }}
 
       - name: Resolve inputs
         id: inputs
@@ -42,7 +51,7 @@ jobs:
           PROMPT_DESCRIPTION: ${{ steps.parse.outputs.issueparser_prompt_description }}
           PROMPT_TOOLS: ${{ steps.parse.outputs.issueparser_prompt_tools }}
           PROMPT_AUTHORS: ${{ steps.parse.outputs.issueparser_prompt_authors }}
-          TARGET_ORG: ${{ steps.parse.outputs.issueparser_target_organization }}
+          TARGET_ORG: ${{ inputs.target_organization }}
         run: |
           set -euo pipefail
 
@@ -88,39 +97,6 @@ jobs:
             echo "project_name=${CONTEXT_TRIM}-${ACTION_TRIM}-${TARGET_TRIM}-prompt"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Preflight 1 - Verify GitHub App installation
-        id: app-installed
-        uses: actions/github-script@v8
-        env:
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          APP_ID: ${{ env.APP_ID }}
-          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
-        with:
-          script: |
-            const script = require('./.github/workflows/scripts/verify-app-installation.js');
-            await script({ core });
-
-      - name: Comment if app missing
-        if: failure() && steps.app-installed.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
-          APP_SLUG: ${{ env.APP_SLUG }}
-          APP_ID: ${{ env.APP_ID }}
-        run: |
-          gh issue comment "$ISSUE_NUMBER" \
-            --repo "$GH_REPO" \
-            --body \
-            "❌ Preflight failed.
-
-            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
-
-            Please install the app on the organization and retry."
-
-          exit 1
-
       - name: Generate app token
         id: app-token
         uses: actions/create-github-app-token@v3
@@ -129,13 +105,13 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.inputs.outputs.target_organization }}
 
-      - name: Preflight 2 - Target repository must not already exist
+      - name: Preflight - Target repository must not already exist
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
           PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          GH_REPO: ${{ inputs.source_repo }}
         run: .github/workflows/scripts/check-repo-available.sh "$TARGET_ORG" "$PROJECT_NAME"
 
       - name: Set up Python
@@ -186,8 +162,8 @@ jobs:
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
           PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
           PROMPT_DESCRIPTION: ${{ steps.inputs.outputs.prompt_description }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          SOURCE_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          SOURCE_REPO: ${{ inputs.source_repo }}
         run: |
           set -euo pipefail
 
@@ -239,8 +215,8 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          GH_REPO: ${{ inputs.source_repo }}
           TARGET_ORG: ${{ steps.inputs.outputs.target_organization }}
           PROJECT_NAME: ${{ steps.inputs.outputs.project_name }}
         run: |

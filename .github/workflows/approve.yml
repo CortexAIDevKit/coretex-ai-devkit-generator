@@ -1,0 +1,146 @@
+name: Approve Request
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  gate:
+    if: >-
+      github.event.issue.state == 'open' &&
+      startsWith(github.event.comment.body, '/approve') &&
+      (contains(github.event.issue.labels.*.name, 'skill-request') ||
+       contains(github.event.issue.labels.*.name, 'prompt-request'))
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ID: 3744672
+      APP_SLUG: cortex-ai-devkit-bot
+
+    outputs:
+      type: ${{ steps.classify.outputs.type }}
+      target_organization: ${{ steps.classify.outputs.target_organization }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Classify request
+        id: classify
+        env:
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          if echo "$LABELS" | grep -q '"skill-request"'; then
+            echo "type=skill" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q '"prompt-request"'; then
+            echo "type=prompt" >> "$GITHUB_OUTPUT"
+          else
+            echo "No recognized request label on issue" >&2
+            exit 1
+          fi
+          echo "target_organization=CortexAIDevKit" >> "$GITHUB_OUTPUT"
+
+      - name: Preflight 1 - Verify GitHub App installation
+        id: app-installed
+        uses: actions/github-script@v8
+        env:
+          TARGET_ORG: ${{ steps.classify.outputs.target_organization }}
+          APP_ID: ${{ env.APP_ID }}
+          PRIVATE_KEY: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
+        with:
+          script: |
+            const script = require('./.github/workflows/scripts/verify-app-installation.js');
+            await script({ core });
+
+      - name: Comment if app missing
+        if: failure() && steps.app-installed.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_ORG: ${{ steps.classify.outputs.target_organization }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+          APP_SLUG: ${{ env.APP_SLUG }}
+          APP_ID: ${{ env.APP_ID }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GH_REPO" \
+            --body \
+            "❌ Preflight failed.
+
+            [Install GitHub App: **\`${APP_SLUG}\`**](https://github.com/apps/cortex-ai-devkit-bot/installations/new) on organization \`${TARGET_ORG}\`.
+
+            Please install the app on the organization and retry."
+
+          exit 1
+
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ env.APP_ID }}
+          private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
+          owner: ${{ steps.classify.outputs.target_organization }}
+
+      - name: Preflight 2 - Verify approver is in @CortexAIDevKit/core
+        id: team-check
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_ORG: ${{ steps.classify.outputs.target_organization }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          STATE="$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${TARGET_ORG}/teams/core/memberships/${COMMENTER}" \
+            --jq '.state' 2>/dev/null || true)"
+          if [ "$STATE" != "active" ]; then
+            exit 1
+          fi
+
+      - name: Comment if approver not authorized
+        if: failure() && steps.team-check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_REPO: ${{ github.repository }}
+          COMMENTER: ${{ github.event.comment.user.login }}
+          TARGET_ORG: ${{ steps.classify.outputs.target_organization }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$GH_REPO" \
+            --body \
+            "❌ @${COMMENTER} you are not allowed to approve.
+
+            Only members of **@${TARGET_ORG}/core** can approve this request."
+
+          exit 1
+
+  dispatch-skill:
+    needs: gate
+    if: needs.gate.outputs.type == 'skill'
+    uses: ./.github/workflows/skill-request.yml
+    secrets: inherit
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      issue_body: ${{ github.event.issue.body }}
+      source_repo: ${{ github.repository }}
+      target_organization: ${{ needs.gate.outputs.target_organization }}
+
+  dispatch-prompt:
+    needs: gate
+    if: needs.gate.outputs.type == 'prompt'
+    uses: ./.github/workflows/prompt-request.yml
+    secrets: inherit
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      issue_body: ${{ github.event.issue.body }}
+      source_repo: ${{ github.repository }}
+      target_organization: ${{ needs.gate.outputs.target_organization }}
