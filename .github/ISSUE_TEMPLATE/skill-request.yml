@@ -6,6 +6,10 @@ labels:
 type: task
 projects:
   - CortexAIDevKit/2
+assignees:
+  - paul58914080
+  - Avinash1604
+  - anupbaranwal
 body:
   - type: markdown
     attributes:
