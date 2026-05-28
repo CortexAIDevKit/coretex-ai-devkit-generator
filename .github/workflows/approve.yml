@@ -89,7 +89,7 @@ jobs:
           private-key: ${{ secrets.CORTEX_AI_DEVKIT_BOT_APP_PRIVATE_KEY }}
           owner: ${{ steps.classify.outputs.target_organization }}
 
-      - name: Preflight 2 - Verify approver is in @CortexAIDevKit/core
+      - name: Preflight 2 - Verify approver is in @CortexAIDevKit/cortex-core
         id: team-check
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -99,7 +99,7 @@ jobs:
           set -euo pipefail
           STATE="$(gh api \
             -H "Accept: application/vnd.github+json" \
-            "/orgs/${TARGET_ORG}/teams/core/memberships/${COMMENTER}" \
+            "/orgs/${TARGET_ORG}/teams/cortex-core/memberships/${COMMENTER}" \
             --jq '.state' 2>/dev/null || true)"
           if [ "$STATE" != "active" ]; then
             exit 1
@@ -119,7 +119,7 @@ jobs:
             --body \
             "❌ @${COMMENTER} you are not allowed to approve.
 
-            Only members of **@${TARGET_ORG}/core** can approve this request."
+            Only members of **@${TARGET_ORG}/cortex-core** can approve this request."
 
           exit 1
 
